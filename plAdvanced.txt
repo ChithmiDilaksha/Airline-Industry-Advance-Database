@@ -1,0 +1,68 @@
+set serveroutput on;
+
+CREATE OR REPLACE FUNCTION get_flight_type(p_fcode VARCHAR2)
+RETURN VARCHAR2 IS
+   v_ftype flight.FType%TYPE;
+BEGIN
+   SELECT FType INTO v_ftype
+   FROM flight
+   WHERE FCode = p_fcode;
+
+   RETURN v_ftype;
+EXCEPTION
+   WHEN NO_DATA_FOUND THEN
+      RETURN 'Flight code not found';
+   WHEN OTHERS THEN
+      RETURN 'Error occurred: ' || SQLERRM;
+END;
+/
+select get_flight_type('FL001') from dual;
+/
+
+CREATE OR REPLACE PROCEDURE add_flight(
+   p_fcode VARCHAR2,
+   p_ftype VARCHAR2,
+   p_departure VARCHAR2,
+   p_arrival VARCHAR2,
+   p_ddate DATE,
+   p_adate DATE
+) IS
+BEGIN
+   INSERT INTO flight (FCode, FType, Departure, Arrival, DDate, ADate)
+   VALUES (p_fcode, p_ftype, p_departure, p_arrival, p_ddate, p_adate);
+
+   DBMS_OUTPUT.PUT_LINE('Flight added successfully: ' || p_fcode);
+EXCEPTION
+   WHEN DUP_VAL_ON_INDEX THEN
+      DBMS_OUTPUT.PUT_LINE('Error: Flight code already exists.');
+   WHEN OTHERS THEN
+      DBMS_OUTPUT.PUT_LINE('Error occurred: ' || SQLERRM);
+END;
+/
+
+BEGIN
+   add_flight('FL009', 'Airbus', 'Colombo', 'Delhi', SYSDATE, SYSDATE + 1);
+END;
+/
+select * from flight
+/
+select * from maintenance
+
+/
+create sequence seq_main
+start with 5
+increment by 1
+nocache;
+/
+
+create or replace trigger trig_before_insert_maintenance
+before insert on maintenance
+for each row
+begin
+    :NEW.MID := seq_main.NEXTVAL;
+end;
+/
+
+INSERT INTO maintenance (MDate, MCost, FCode)
+VALUES (SYSDATE, 5000, 'FL001');
+
